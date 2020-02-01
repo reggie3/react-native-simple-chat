@@ -6,12 +6,12 @@ import {
   ScrollView,
   TextInput,
   Button,
-  FlatList,
+  findNodeHandle,
   TouchableOpacity
 } from "react-native";
 import { LoremIpsum } from "lorem-ipsum";
-import { Viewport } from "@skele/components";
-const ViewportAwareView = Viewport.Aware(View);
+import ChatMessage, { Message } from "./ChatMessage";
+const isEqual = require("lodash.isequal");
 
 const lorem = new LoremIpsum({
   sentencesPerParagraph: {
@@ -24,23 +24,26 @@ const lorem = new LoremIpsum({
   }
 });
 
-const INCOMING_MESSAGE_COLOR = "lightblue";
-const OUTGOING_MESSAGE_COLOR = "lightgreen";
-
-type Message = {
-  id: string;
-  fromUser: boolean;
-  text: string;
+type Layout = {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  pageX?: number;
+  pageY?: number;
 };
 
 export interface ChatContainerProps {}
 
 export interface ChatContainerState {
+  scrollViewPortBottomY: number;
   doShowNewMessageTab: boolean;
   inputText: string;
   isManuallyOffset: boolean;
   isLastItemVisible: boolean;
+  lastMessageLayout: Layout;
   messages: Message[];
+  scrollViewLayout: Layout;
 }
 
 export default class ChatContainer extends React.Component<
@@ -52,11 +55,14 @@ export default class ChatContainer extends React.Component<
   constructor(props: ChatContainerProps) {
     super(props);
     this.state = {
+      scrollViewPortBottomY: 0,
       doShowNewMessageTab: false,
       inputText: "",
       isLastItemVisible: true,
       isManuallyOffset: false,
-      messages: []
+      lastMessageLayout: null,
+      messages: [],
+      scrollViewLayout: null
     };
   }
 
@@ -69,16 +75,31 @@ export default class ChatContainer extends React.Component<
   };
 
   componentDidMount = () => {
-    setInterval(this.addIncomingMessage, 1000);
+    setInterval(this.addIncomingMessage, 1200);
   };
 
   componentDidUpdate = (
     prevProps: ChatContainerProps,
     prevState: ChatContainerState
   ) => {
-    const { isLastItemVisible, messages } = this.state;
-    if (isLastItemVisible !== prevState.isLastItemVisible) {
-      console.log(isLastItemVisible);
+    const {
+      isLastItemVisible,
+      lastMessageLayout,
+      scrollViewPortBottomY
+    } = this.state;
+
+    if (
+      lastMessageLayout &&
+      scrollViewPortBottomY !== prevState.scrollViewPortBottomY
+    ) {
+      if (scrollViewPortBottomY > lastMessageLayout.y && !isLastItemVisible) {
+        this.setState({ isLastItemVisible: true, doShowNewMessageTab: false });
+      } else if (
+        scrollViewPortBottomY <= lastMessageLayout.y &&
+        isLastItemVisible
+      ) {
+        this.setState({ isLastItemVisible: false, doShowNewMessageTab: true });
+      }
     }
   };
 
@@ -98,57 +119,7 @@ export default class ChatContainer extends React.Component<
     });
   };
 
-  MessageItem = ({ item, index }: { item: Message; index: number }) => {
-    const isLastItem = index === this.state.messages.length - 1;
-
-    const message = (
-      <View
-        ref={ref => {
-          if (isLastItem) {
-            this.lastMessageRef = ref;
-          }
-        }}
-        key={item.id}
-        style={{
-          ...styles.messageRowContainer,
-          alignItems: item.fromUser ? "flex-end" : "flex-start"
-        }}
-      >
-        <View
-          style={
-            item.fromUser
-              ? messageStyles.messageViewOutgoing
-              : messageStyles.messageViewIncoming
-          }
-        >
-          <Text style={styles.messageText}>{item.text}</Text>
-        </View>
-      </View>
-    );
-
-    return isLastItem ? (
-      <ViewportAwareView
-        key={item.id}
-        preTriggerRatio={0.5}
-        onViewportEnter={() => {
-          debugger;
-          if (!this.state.isLastItemVisible) {
-            this.setState({ isLastItemVisible: true });
-          }
-        }}
-        onViewportLeave={() => {
-          debugger;
-          if (this.state.isLastItemVisible) {
-            this.setState({ isLastItemVisible: false });
-          }
-        }}
-      >
-        {message}
-      </ViewportAwareView>
-    ) : (
-      message
-    );
-  };
+  MessageItem = ({ item, index }: { item: Message; index: number }) => {};
 
   onSubmitInput = () => {
     this.setState((prevState, props) => {
@@ -174,28 +145,74 @@ export default class ChatContainer extends React.Component<
     contentWidth: number,
     contentHeight: number
   ) => {
-    // this.scrollViewRef.scrollToEnd({ animated: true });
+    if (this.state.isLastItemVisible) {
+      this.scrollViewRef.scrollToEnd({ animated: true });
+    }
+  };
+
+  onScrollViewLayout = (e: any) => {
+    this.setState({
+      scrollViewLayout: {
+        width: e.nativeEvent.layout.width,
+        height: e.nativeEvent.layout.height,
+        x: e.nativeEvent.layout.x,
+        y: e.nativeEvent.layout.y
+      }
+    });
+  };
+
+  onScrollViewScroll = ({ nativeEvent }) => {
+    this.setState({
+      scrollViewPortBottomY:
+        nativeEvent.contentOffset.y + this.state.scrollViewLayout.height
+    });
+
+    // update the position of the last message
+    this.lastMessageRef.measureLayout(
+      findNodeHandle(this.scrollViewRef),
+      (xPos, yPos, Width, Height) => {
+        this.setState({
+          lastMessageLayout: { x: xPos, y: yPos, width: Width, height: Height }
+        });
+      },
+      null
+    );
   };
 
   public render() {
-    const { inputText, messages } = this.state;
+    const { doShowNewMessageTab, inputText, messages } = this.state;
 
     return (
       <View style={styles.container}>
         <View style={styles.scrollContainer}>
-          <Viewport.Tracker>
-            <ScrollView
-              ref={ref => (this.scrollViewRef = ref)}
-              onContentSizeChange={this.onScrollViewContentSizeChange}
+          <ScrollView
+            ref={ref => (this.scrollViewRef = ref)}
+            onContentSizeChange={this.onScrollViewContentSizeChange}
+            onLayout={this.onScrollViewLayout}
+            onScroll={this.onScrollViewScroll}
+            scrollEventThrottle={400}
+          >
+            {this.state.messages.map((message, index) => {
+              return (
+                <ChatMessage
+                  key={message.id}
+                  isLastMessage={index === messages.length - 1}
+                  message={message}
+                  setLastMessageRef={ref => {
+                    this.lastMessageRef = ref;
+                  }}
+                />
+              );
+            })}
+          </ScrollView>
+          {doShowNewMessageTab && (
+            <TouchableOpacity
+              onPress={() => this.scrollViewRef.scrollToEnd()}
+              style={styles.newMessageIndicator}
             >
-              {this.state.messages.map((message, index) => {
-                return this.MessageItem({ item: message, index });
-              })}
-            </ScrollView>
-          </Viewport.Tracker>
-          <TouchableOpacity style={styles.newMessageIndicator}>
-            <Text style={styles.newMessageIndicatorText}>new messages</Text>
-          </TouchableOpacity>
+              <Text style={styles.newMessageIndicatorText}>new messages</Text>
+            </TouchableOpacity>
+          )}
         </View>
         <View style={styles.inputRow}>
           <TextInput
@@ -225,21 +242,9 @@ const styles = StyleSheet.create({
   inputRow: {
     flexDirection: "row"
   },
-  messageRowContainer: {
-    marginHorizontal: 5
-  },
-  messageView: {
-    borderRadius: 5,
-    marginVertical: 10,
-    maxWidth: "70%",
-    paddingHorizontal: 10,
-    paddingVertical: 5
-  },
-  messageText: {
-    fontSize: 14
-  },
+
   newMessageIndicator: {
-    backgroundColor: "rgba(255,0,155, .5)",
+    backgroundColor: "rgba(255,0,155, .75)",
     borderTopLeftRadius: 5,
     borderTopRightRadius: 5,
     bottom: 0,
@@ -263,16 +268,5 @@ const styles = StyleSheet.create({
     flex: 1,
     margin: 10,
     width: "100%"
-  }
-});
-
-const messageStyles = StyleSheet.create({
-  messageViewIncoming: {
-    ...styles.messageView,
-    backgroundColor: INCOMING_MESSAGE_COLOR
-  },
-  messageViewOutgoing: {
-    ...styles.messageView,
-    backgroundColor: OUTGOING_MESSAGE_COLOR
   }
 });
