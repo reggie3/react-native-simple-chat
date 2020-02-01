@@ -16,7 +16,6 @@ export default function App() {
         <View style={styles.header}>
           <Text style={styles.headerText}>Simple Chat Window Example</Text>
         </View>
-
         <ChatContainer />
       </SafeAreaView>
     </KeyboardAvoidingView>

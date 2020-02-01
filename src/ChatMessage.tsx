@@ -17,48 +17,56 @@ interface ChatMessageProps {
 const INCOMING_MESSAGE_COLOR = "lightblue";
 const OUTGOING_MESSAGE_COLOR = "lightgreen";
 
-const ChatMessage: React.SFC<ChatMessageProps> = ({
-  message,
-  isLastMessage,
-  setLastMessageRef
-}) => {
-  const opacity = new Animated.Value(0);
+export default class ChatMessage extends React.Component<ChatMessageProps> {
+  opacityValue: Animated.Value;
 
-  useEffect(() => {
-    Animated.timing(opacity, {
+  constructor(props: ChatMessageProps) {
+    super(props);
+    this.opacityValue = new Animated.Value(0);
+  }
+
+  componentDidMount() {
+    this.fadeIn();
+  }
+
+  fadeIn = () => {
+    this.opacityValue.setValue(0);
+    Animated.timing(this.opacityValue, {
       toValue: 1,
-      duration: 500
+      duration: 500,
+      easing: Easing.linear
     }).start();
-  }, []);
+  };
 
-  const messageStyle = message.fromUser
-    ? messageStyles.messageViewOutgoing
-    : messageStyles.messageViewIncoming;
-  return (
-    <View
-      ref={ref => {
-        if (isLastMessage) {
-          setLastMessageRef(ref);
-        }
-      }}
-      style={{
-        ...styles.messageRowContainer,
-        alignItems: message.fromUser ? "flex-end" : "flex-start"
-      }}
-    >
-      <Animated.View
+  render() {
+    const { message, isLastMessage, setLastMessageRef } = this.props;
+    const messageStyle = message.fromUser
+      ? messageStyles.messageViewOutgoing
+      : messageStyles.messageViewIncoming;
+    return (
+      <View
+        ref={ref => {
+          if (isLastMessage) {
+            setLastMessageRef(ref);
+          }
+        }}
         style={{
-          ...messageStyle,
-          opacity
+          ...styles.messageRowContainer,
+          alignItems: message.fromUser ? "flex-end" : "flex-start"
         }}
       >
-        <Text style={styles.messageText}>{message.text}</Text>
-      </Animated.View>
-    </View>
-  );
-};
-
-export default ChatMessage;
+        <Animated.View
+          style={{
+            ...messageStyle,
+            opacity: this.opacityValue
+          }}
+        >
+          <Text style={styles.messageText}>{message.text}</Text>
+        </Animated.View>
+      </View>
+    );
+  }
+}
 
 const styles = StyleSheet.create({
   messageRowContainer: {

@@ -214,7 +214,7 @@ export default class ChatContainer extends React.Component<
             </TouchableOpacity>
           )}
         </View>
-        <View style={styles.inputRow}>
+        <View style={styles.textInputRow}>
           <TextInput
             style={styles.textInput}
             onChangeText={text => this.onChangeInputText(text)}
@@ -234,17 +234,13 @@ export default class ChatContainer extends React.Component<
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    padding: 10,
-    width: "100%"
-  },
-  inputRow: {
-    flexDirection: "row"
+
+    /*     padding: 10,
+     */ width: "100%"
   },
 
   newMessageIndicator: {
-    backgroundColor: "rgba(255,0,155, .75)",
+    backgroundColor: "rgba(30,144,255, .75)",
     borderTopLeftRadius: 5,
     borderTopRightRadius: 5,
     bottom: 0,
@@ -263,10 +259,13 @@ const styles = StyleSheet.create({
     height: 40,
     marginRight: 10
   },
+  textInputRow: {
+    flexDirection: "row",
+    marginHorizontal: 5
+  },
   scrollContainer: {
     backgroundColor: "aliceblue",
     flex: 1,
-    margin: 10,
-    width: "100%"
+    margin: 10
   }
 });
