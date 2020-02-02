@@ -2,19 +2,18 @@ import * as React from "react";
 import {
   View,
   StyleSheet,
-  Text,
   ScrollView,
   TextInput,
   Button,
-  findNodeHandle,
-  TouchableOpacity
+  findNodeHandle
 } from "react-native";
 import { LoremIpsum } from "lorem-ipsum";
 import ChatMessage, { Message } from "./ChatMessage";
-import MoreMessagesTabComponent from "./MoreMessagesTab";
 import MoreMessagesTab from "./MoreMessagesTab";
+import TimeStampSeperator from "./TimeStampSeperator";
 const isEqual = require("lodash.isequal");
 
+const TIME_STAMP_INTERVAL = 10000; // 60000
 const lorem = new LoremIpsum({
   sentencesPerParagraph: {
     max: 8,
@@ -44,6 +43,7 @@ export interface ChatContainerState {
   isManuallyOffset: boolean;
   isLastItemVisible: boolean;
   lastMessageLayout: Layout;
+  lastTimeStampDisplayed: number;
   messages: Message[];
   scrollViewLayout: Layout;
 }
@@ -63,6 +63,7 @@ export default class ChatContainer extends React.Component<
       isLastItemVisible: true,
       isManuallyOffset: false,
       lastMessageLayout: null,
+      lastTimeStampDisplayed: null,
       messages: [],
       scrollViewLayout: null
     };
@@ -106,22 +107,39 @@ export default class ChatContainer extends React.Component<
   };
 
   addIncomingMessage = () => {
+    const timeStamp = Date.now();
     this.setState({
       messages: [
         ...this.state.messages,
         {
           id: Math.random().toString(),
           fromUser: Math.random() < 0.6 ? false : true,
+          doShowTimeStamp: this.getShouldMessageShowTimeStamp(timeStamp),
           text:
             Math.random() < 0.6
               ? lorem.generateSentences(2)
-              : lorem.generateWords(3)
+              : lorem.generateWords(3),
+          timeStamp
         }
       ]
     });
   };
 
-  MessageItem = ({ item, index }: { item: Message; index: number }) => {};
+  getShouldMessageShowTimeStamp = (timeStamp: number): boolean => {
+    const { lastTimeStampDisplayed } = this.state;
+    if (!lastTimeStampDisplayed) {
+      this.setState({ lastTimeStampDisplayed: timeStamp });
+      return true;
+    } else {
+      const millisSinceLastTimeStamp: number =
+        timeStamp - lastTimeStampDisplayed;
+      if (millisSinceLastTimeStamp > TIME_STAMP_INTERVAL) {
+        this.setState({ lastTimeStampDisplayed: timeStamp });
+        return true;
+      }
+    }
+    return false;
+  };
 
   onSubmitInput = () => {
     this.setState((prevState, props) => {
@@ -131,7 +149,8 @@ export default class ChatContainer extends React.Component<
           {
             id: Math.random().toString(),
             fromUser: true,
-            text: prevState.inputText
+            text: prevState.inputText,
+            timeStamp: Date.now()
           }
         ],
         inputText: ""
@@ -195,10 +214,11 @@ export default class ChatContainer extends React.Component<
             scrollEventThrottle={400}
           >
             {this.state.messages.map((message, index) => {
+              const isLastMessage: boolean = index === messages.length - 1;
               return (
                 <ChatMessage
                   key={message.id}
-                  isLastMessage={index === messages.length - 1}
+                  isLastMessage={isLastMessage}
                   message={message}
                   setLastMessageRef={ref => {
                     this.lastMessageRef = ref;

@@ -1,11 +1,13 @@
 import * as React from "react";
-import { StyleSheet, Text, View, Animated, Image, Easing } from "react-native";
-import { useEffect } from "react";
+import { StyleSheet, View, Animated, Easing } from "react-native";
+import TimeStampSeperator from "./TimeStampSeperator";
 
 export type Message = {
   id: string;
+  doShowTimeStamp?: boolean;
   fromUser: boolean;
   text: string;
+  timeStamp: number;
 };
 
 interface ChatMessageProps {
@@ -55,15 +57,18 @@ export default class ChatMessage extends React.Component<ChatMessageProps> {
           }
         }}
         style={{
-          ...styles.messageRowContainer,
-          alignItems: message.fromUser ? "flex-end" : "flex-start"
+          ...styles.messageRowContainer
         }}
       >
+        {message.doShowTimeStamp && (
+          <TimeStampSeperator timeStamp={message.timeStamp} />
+        )}
         <Animated.View
           style={{
             ...messageStyle,
             opacity: this.animatedValue,
-            transform: [{ scaleY }]
+            transform: [{ scaleY }],
+            alignSelf: message.fromUser ? "flex-end" : "flex-start"
           }}
         >
           <Animated.Text
