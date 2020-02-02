@@ -18,28 +18,32 @@ const INCOMING_MESSAGE_COLOR = "lightblue";
 const OUTGOING_MESSAGE_COLOR = "lightgreen";
 
 export default class ChatMessage extends React.Component<ChatMessageProps> {
-  opacityValue: Animated.Value;
+  animatedValue: Animated.Value;
 
   constructor(props: ChatMessageProps) {
     super(props);
-    this.opacityValue = new Animated.Value(0);
+    this.animatedValue = new Animated.Value(0);
   }
 
   componentDidMount() {
-    this.fadeIn();
+    this.doMountAnimation();
   }
 
-  fadeIn = () => {
-    this.opacityValue.setValue(0);
-    Animated.timing(this.opacityValue, {
+  doMountAnimation = () => {
+    this.animatedValue.setValue(0);
+    Animated.timing(this.animatedValue, {
       toValue: 1,
       duration: 500,
-      easing: Easing.linear
+      easing: Easing.quad
     }).start();
   };
 
   render() {
     const { message, isLastMessage, setLastMessageRef } = this.props;
+    const scaleY = this.animatedValue.interpolate({
+      inputRange: [0, 1],
+      outputRange: [0, 1]
+    });
     const messageStyle = message.fromUser
       ? messageStyles.messageViewOutgoing
       : messageStyles.messageViewIncoming;
@@ -58,10 +62,15 @@ export default class ChatMessage extends React.Component<ChatMessageProps> {
         <Animated.View
           style={{
             ...messageStyle,
-            opacity: this.opacityValue
+            opacity: this.animatedValue,
+            transform: [{ scaleY }]
           }}
         >
-          <Text style={styles.messageText}>{message.text}</Text>
+          <Animated.Text
+            style={{ ...styles.messageText, opacity: this.animatedValue }}
+          >
+            {message.text}
+          </Animated.Text>
         </Animated.View>
       </View>
     );
@@ -81,7 +90,15 @@ const styles = StyleSheet.create({
     marginVertical: 10,
     maxWidth: "70%",
     paddingHorizontal: 10,
-    paddingVertical: 5
+    paddingVertical: 5,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5
   }
 });
 const messageStyles = StyleSheet.create({

@@ -11,6 +11,8 @@ import {
 } from "react-native";
 import { LoremIpsum } from "lorem-ipsum";
 import ChatMessage, { Message } from "./ChatMessage";
+import MoreMessagesTabComponent from "./MoreMessagesTab";
+import MoreMessagesTab from "./MoreMessagesTab";
 const isEqual = require("lodash.isequal");
 
 const lorem = new LoremIpsum({
@@ -205,14 +207,10 @@ export default class ChatContainer extends React.Component<
               );
             })}
           </ScrollView>
-          {doShowNewMessageTab && (
-            <TouchableOpacity
-              onPress={() => this.scrollViewRef.scrollToEnd()}
-              style={styles.newMessageIndicator}
-            >
-              <Text style={styles.newMessageIndicatorText}>new messages</Text>
-            </TouchableOpacity>
-          )}
+          <MoreMessagesTab
+            isVisible={doShowNewMessageTab}
+            onPress={() => this.scrollViewRef.scrollToEnd()}
+          />
         </View>
         <View style={styles.textInputRow}>
           <TextInput
@@ -239,18 +237,6 @@ const styles = StyleSheet.create({
      */ width: "100%"
   },
 
-  newMessageIndicator: {
-    backgroundColor: "rgba(30,144,255, .75)",
-    borderTopLeftRadius: 5,
-    borderTopRightRadius: 5,
-    bottom: 0,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    position: "absolute"
-  },
-  newMessageIndicatorText: {
-    color: "white"
-  },
   textInput: {
     borderColor: "lightgray",
     borderRadius: 5,
