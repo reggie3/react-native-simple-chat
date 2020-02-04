@@ -10,7 +10,7 @@ const TimeStampSeperator: React.SFC<TimeStampSeperatorProps> = ({
 }) => {
   return (
     <View style={styles.timeStampContainer}>
-      <Text>{new Date(timeStamp).toLocaleDateString()}</Text>
+      <Text>{new Date(timeStamp).toLocaleTimeString()}</Text>
     </View>
   );
 };

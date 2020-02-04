@@ -10,8 +10,6 @@ import {
 import { LoremIpsum } from "lorem-ipsum";
 import ChatMessage, { Message } from "./ChatMessage";
 import MoreMessagesTab from "./MoreMessagesTab";
-import TimeStampSeperator from "./TimeStampSeperator";
-const isEqual = require("lodash.isequal");
 
 const TIME_STAMP_INTERVAL = 10000; // 60000
 const lorem = new LoremIpsum({
@@ -40,6 +38,7 @@ export interface ChatContainerState {
   scrollViewPortBottomY: number;
   doShowNewMessageTab: boolean;
   inputText: string;
+  intervalId: number;
   isManuallyOffset: boolean;
   isLastItemVisible: boolean;
   lastMessageLayout: Layout;
@@ -60,6 +59,7 @@ export default class ChatContainer extends React.Component<
       scrollViewPortBottomY: 0,
       doShowNewMessageTab: false,
       inputText: "",
+      intervalId: null,
       isLastItemVisible: true,
       isManuallyOffset: false,
       lastMessageLayout: null,
@@ -78,7 +78,8 @@ export default class ChatContainer extends React.Component<
   };
 
   componentDidMount = () => {
-    setInterval(this.addIncomingMessage, 1200);
+    const intervalId = setInterval(this.addIncomingMessage, 1200);
+    this.setState({ intervalId });
   };
 
   componentDidUpdate = (
@@ -104,6 +105,10 @@ export default class ChatContainer extends React.Component<
         this.setState({ isLastItemVisible: false, doShowNewMessageTab: true });
       }
     }
+  };
+
+  componentWillUnmount = () => {
+    clearInterval(this.state.intervalId);
   };
 
   addIncomingMessage = () => {
@@ -212,6 +217,7 @@ export default class ChatContainer extends React.Component<
             onLayout={this.onScrollViewLayout}
             onScroll={this.onScrollViewScroll}
             scrollEventThrottle={400}
+            testID="messageScrollView"
           >
             {this.state.messages.map((message, index) => {
               const isLastMessage: boolean = index === messages.length - 1;
@@ -236,12 +242,14 @@ export default class ChatContainer extends React.Component<
           <TextInput
             style={styles.textInput}
             onChangeText={text => this.onChangeInputText(text)}
+            testID="messageInput"
             value={inputText}
           />
           <Button
             disabled={!inputText.length}
             onPress={this.onSubmitInput}
             title="Submit"
+            testID="messageSubmitButton"
           />
         </View>
       </View>
