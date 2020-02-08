@@ -59,6 +59,7 @@ export default class ChatMessage extends React.Component<ChatMessageProps> {
         style={{
           ...styles.messageRowContainer
         }}
+        testID={message.text}
       >
         {message.doShowTimeStamp && (
           <TimeStampSeperator timeStamp={message.timeStamp} />
