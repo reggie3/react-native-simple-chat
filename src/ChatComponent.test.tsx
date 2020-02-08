@@ -28,8 +28,10 @@ describe("ChatComponent", () => {
     const messageSubmitButton = getByTestId("messageSubmitButton");
 
     fireEvent.changeText(messageInput, testMessage);
+    console.log(messageInput.props.value);
     expect(queryByText(testMessage)).toBeFalsy();
     fireEvent.press(messageSubmitButton);
     expect(getByText(testMessage)).toBeTruthy();
+    expect(messageInput.props.value).toBe("");
   });
 });
